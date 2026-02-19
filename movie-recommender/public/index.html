@@ -3,34 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CineMatch — AI Movie Recommendations</title>
+  <title>Marquee — AI Movie Recommendations</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- Film grain overlay -->
-  <div class="grain" aria-hidden="true"></div>
 
   <!-- Navigation -->
   <nav class="nav">
     <div class="nav-inner container">
       <div class="logo">
-        <!-- Abstract techy aperture logo -->
-        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="15,2 28,8.5 28,21.5 15,28 2,21.5 2,8.5" stroke="#E50914" stroke-width="1.8" fill="none"/>
-          <polygon points="15,7 23,11.5 23,18.5 15,23 7,18.5 7,11.5" stroke="#E50914" stroke-width="1.2" fill="none" opacity="0.5"/>
-          <circle cx="15" cy="15" r="3.5" fill="#E50914"/>
-          <line x1="15" y1="2" x2="15" y2="7" stroke="#E50914" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="28" y1="8.5" x2="23" y2="11.5" stroke="#E50914" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="28" y1="21.5" x2="23" y2="18.5" stroke="#E50914" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="15" y1="28" x2="15" y2="23" stroke="#E50914" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="2" y1="21.5" x2="7" y2="18.5" stroke="#E50914" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="2" y1="8.5" x2="7" y2="11.5" stroke="#E50914" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- Futuristic geometric logo: outer diamond + inner square + gradient nodes -->
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#A78BFA"/>
+              <stop offset="100%" stop-color="#60D8FA"/>
+            </linearGradient>
+          </defs>
+          <rect width="34" height="34" rx="7" fill="#0D0D1F"/>
+          <!-- Outer diamond -->
+          <polygon points="17,3 31,17 17,31 3,17" stroke="url(#lg)" stroke-width="1.5" fill="none"/>
+          <!-- Inner square (axis-aligned, 45° offset from outer) -->
+          <rect x="11" y="11" width="12" height="12" stroke="url(#lg)" stroke-width="1" fill="none" opacity="0.5"/>
+          <!-- Cardinal nodes -->
+          <circle cx="17" cy="3"  r="2.2" fill="#A78BFA"/>
+          <circle cx="31" cy="17" r="2.2" fill="#60D8FA"/>
+          <circle cx="17" cy="31" r="2.2" fill="#A78BFA"/>
+          <circle cx="3"  cy="17" r="2.2" fill="#60D8FA"/>
+          <!-- Centre glow -->
+          <circle cx="17" cy="17" r="2.8" fill="url(#lg)"/>
         </svg>
-        <span>CineMatch</span>
+        <span>Marquee</span>
       </div>
     </div>
   </nav>
@@ -39,10 +45,6 @@
 
     <!-- ═══════════════════════════════ HERO ═══════════════════════════════ -->
     <section class="hero" id="heroSection">
-      <div class="spotlight spotlight-l" aria-hidden="true"></div>
-      <div class="spotlight spotlight-r" aria-hidden="true"></div>
-      <div class="spotlight spotlight-c" aria-hidden="true"></div>
-
       <div class="hero-content container">
         <span class="eyebrow">AI-Powered Film Discovery</span>
         <h1 class="hero-title">
@@ -50,12 +52,12 @@
           <em>Obsession</em> Awaits
         </h1>
         <p class="hero-sub">
-          Tell us a movie you love — our AI will find six perfectly matched films,
-          complete with ratings, synopses, and a personal reason for each pick.
+          Enter a movie or TV show you love — our AI finds 10 perfectly matched picks,
+          complete with ratings, synopses, and why each one is right for you.
         </p>
 
         <div class="search-wrap">
-          <label for="movieInput" class="sr-only">Enter a movie title</label>
+          <label for="movieInput" class="sr-only">Enter a movie or TV show title</label>
           <div class="search-box" id="searchBox">
             <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="2" width="20" height="20" rx="2.18"/>
@@ -71,7 +73,7 @@
               type="text"
               id="movieInput"
               class="search-input"
-              placeholder="e.g. Inception, Parasite, The Godfather…"
+              placeholder="e.g. Inception, Breaking Bad, Parasite…"
               autocomplete="off"
               spellcheck="false"
             >
@@ -88,97 +90,35 @@
         <div class="quick-row">
           <span class="quick-label">Try:</span>
           <div class="quick-pills">
-            <button class="pill" onclick="quickSearch('Inception')">Inception</button>
-            <button class="pill" onclick="quickSearch('Parasite')">Parasite</button>
-            <button class="pill" onclick="quickSearch('The Godfather')">The Godfather</button>
-            <button class="pill" onclick="quickSearch('Blade Runner 2049')">Blade Runner 2049</button>
-            <button class="pill" onclick="quickSearch('Spirited Away')">Spirited Away</button>
+            <button class="pill" data-movie="Inception">Inception</button>
+            <button class="pill" data-movie="Parasite">Parasite</button>
+            <button class="pill" data-movie="The Godfather">The Godfather</button>
+            <button class="pill" data-movie="Breaking Bad">Breaking Bad</button>
+            <button class="pill" data-movie="Spirited Away">Spirited Away</button>
           </div>
-        </div>
-      </div>
-
-      <!-- Decorative film strip -->
-      <div class="filmstrip" aria-hidden="true">
-        <div class="fs-holes">
-          <span></span><span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <div class="fs-frames">
-          <div class="fs-frame"></div><div class="fs-frame"></div>
-          <div class="fs-frame"></div><div class="fs-frame"></div>
-          <div class="fs-frame"></div><div class="fs-frame"></div>
-          <div class="fs-frame"></div><div class="fs-frame"></div>
-          <div class="fs-frame"></div><div class="fs-frame"></div>
-        </div>
-        <div class="fs-holes">
-          <span></span><span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span><span></span>
         </div>
       </div>
     </section>
 
-    <!-- ══════════════════════════════ LOADING ═════════════════════════════ -->
+    <!-- ══════════════════════════════ LOADING / GAME ══════════════════════ -->
     <section class="loading-screen" id="loadingScreen" hidden>
-      <div class="reel-wrap">
-        <!-- Movie wheel: film canister / aperture style -->
-        <svg class="reel-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <!-- Static outer ring -->
-          <circle cx="50" cy="50" r="46" fill="none" stroke="#222" stroke-width="3"/>
-          <!-- Spinning wheel -->
-          <g class="reel-spin">
-            <!-- 6 film slots radiating from centre -->
-            <rect x="46" y="6"  width="8" height="20" rx="4" fill="#E50914"/>
-            <rect x="46" y="6"  width="8" height="20" rx="4" fill="#E50914" transform="rotate(60 50 50)"/>
-            <rect x="46" y="6"  width="8" height="20" rx="4" fill="#E50914" transform="rotate(120 50 50)"/>
-            <rect x="46" y="6"  width="8" height="20" rx="4" fill="#E50914" transform="rotate(180 50 50)"/>
-            <rect x="46" y="6"  width="8" height="20" rx="4" fill="#E50914" transform="rotate(240 50 50)"/>
-            <rect x="46" y="6"  width="8" height="20" rx="4" fill="#E50914" transform="rotate(300 50 50)"/>
-            <!-- Hub -->
-            <circle cx="50" cy="50" r="14" fill="#0C0C0C" stroke="#E50914" stroke-width="2.5"/>
-            <circle cx="50" cy="50" r="5"  fill="#E50914"/>
-            <!-- Sprocket holes on each slot -->
-            <circle cx="50" cy="14" r="3" fill="#0C0C0C"/>
-            <circle cx="50" cy="14" r="3" fill="#0C0C0C" transform="rotate(60 50 50)"/>
-            <circle cx="50" cy="14" r="3" fill="#0C0C0C" transform="rotate(120 50 50)"/>
-            <circle cx="50" cy="14" r="3" fill="#0C0C0C" transform="rotate(180 50 50)"/>
-            <circle cx="50" cy="14" r="3" fill="#0C0C0C" transform="rotate(240 50 50)"/>
-            <circle cx="50" cy="14" r="3" fill="#0C0C0C" transform="rotate(300 50 50)"/>
-          </g>
-          <!-- Outer tick marks -->
-          <g stroke="#333" stroke-width="1.5" stroke-linecap="round">
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(0 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(30 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(60 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(90 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(120 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(150 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(180 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(210 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(240 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(270 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(300 50 50)"/>
-            <line x1="50" y1="2"  x2="50" y2="7"  transform="rotate(330 50 50)"/>
-          </g>
-        </svg>
-      </div>
-      <h2 class="loading-title">Finding your films…</h2>
-      <div class="loading-steps">
-        <div class="step" id="step1">Analyzing your taste</div>
-        <div class="step" id="step2">Consulting the AI cinephile</div>
-        <div class="step" id="step3">Fetching movie data</div>
-      </div>
-
-      <!-- Rotating movie tips -->
-      <div class="movie-tip-card" id="movieTipCard">
-        <div class="tip-eyebrow">While you wait</div>
-        <div class="tip-poster-wrap">
-          <img class="tip-poster" id="tipPoster" src="" alt="">
-          <div class="tip-poster-ph" id="tipPosterPh">🎬</div>
+      <div class="game-wrap">
+        <div class="game-status">
+          <p class="game-status-text">🎬 Finding your recommendations…</p>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
         </div>
-        <div class="tip-body">
-          <p class="tip-title" id="tipTitle"></p>
-          <p class="tip-year" id="tipYear"></p>
-          <p class="tip-blurb" id="tipBlurb"></p>
+
+        <div class="game-card">
+          <div class="game-header-row">
+            <span class="game-label">🎮 Movie Quiz</span>
+            <div class="game-score-display">
+              Score <span class="game-score-num" id="gameScore">0</span>
+            </div>
+          </div>
+          <div class="game-emojis" id="gameEmojis">🎬</div>
+          <p class="game-question">Which movie do these emojis represent?</p>
+          <div class="game-options" id="gameOptions"></div>
+          <div class="game-feedback" id="gameFeedback"></div>
         </div>
       </div>
     </section>
@@ -188,7 +128,6 @@
 
       <!-- Seed movie banner -->
       <div class="seed-banner" id="seedBanner">
-        <div class="seed-backdrop" id="seedBackdrop"></div>
         <div class="seed-top-bar container">
           <button class="btn-new-search" id="newSearchBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -202,9 +141,10 @@
           <div class="seed-poster-wrap">
             <img class="seed-poster" id="seedPoster" src="" alt="" hidden>
             <div class="seed-poster-fallback" id="seedPosterFallback">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="2" y="2" width="20" height="20" rx="2.18"/>
-                <line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/>
+                <line x1="7" y1="2" x2="7" y2="22"/>
+                <line x1="17" y1="2" x2="17" y2="22"/>
                 <line x1="2" y1="12" x2="22" y2="12"/>
               </svg>
             </div>
@@ -226,15 +166,24 @@
           <div class="rec-header-top">
             <div>
               <h2 class="rec-title">Your Recommendations</h2>
-              <p class="rec-sub">10 films curated by AI, just for you</p>
+              <p class="rec-sub">10 picks curated by AI, just for you</p>
             </div>
-            <div class="sort-row">
-              <span class="sort-label">Sort by</span>
-              <div class="sort-btns">
-                <button class="sort-btn active" data-sort="default">AI Order</button>
-                <button class="sort-btn" data-sort="year">Year</button>
-                <button class="sort-btn" data-sort="imdb">IMDb</button>
-                <button class="sort-btn" data-sort="rt">RT Score</button>
+            <div class="rec-actions">
+              <button class="btn-more-recs" id="moreRecsBtn" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1 4 1 10 7 10"/>
+                  <path d="M3.51 15a9 9 0 1 0 .49-3.74"/>
+                </svg>
+                More Recommendations
+              </button>
+              <div class="sort-row">
+                <span class="sort-label">Sort by</span>
+                <div class="sort-btns">
+                  <button class="sort-btn active" data-sort="default">AI Order</button>
+                  <button class="sort-btn" data-sort="year">Year</button>
+                  <button class="sort-btn" data-sort="imdb">IMDb</button>
+                  <button class="sort-btn" data-sort="rt">RT Score</button>
+                </div>
               </div>
             </div>
           </div>

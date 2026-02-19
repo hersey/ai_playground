@@ -6,8 +6,12 @@ const $ = id => document.getElementById(id);
 
 // ── State ────────────────────────────────────────────────
 let busy = false;
-let allRecs = [];         // full unordered list
+let allRecs = [];
 let currentSort = 'default';
+let lastSearchTitle = '';
+let gameScore = 0;
+let gameInterval = null;
+let gameActive = false;
 
 // ── Elements ─────────────────────────────────────────────
 const heroSection    = $('heroSection');
@@ -16,26 +20,38 @@ const resultsSection = $('resultsSection');
 const movieInput     = $('movieInput');
 const searchBtn      = $('searchBtn');
 const searchAgainBtn = $('searchAgainBtn');
+const moreRecsBtn    = $('moreRecsBtn');
 const moviesGrid     = $('moviesGrid');
 const toast          = $('toast');
 const toastMsg       = $('toastMsg');
 
-// ── Quick search (called from HTML) ──────────────────────
+// ── Quick search ──────────────────────────────────────────
 function quickSearch(title) {
   movieInput.value = title;
   doSearch();
 }
 
+document.querySelectorAll('.pill[data-movie]').forEach(btn => {
+  btn.addEventListener('click', () => quickSearch(btn.dataset.movie));
+});
+
 // ── Event listeners ───────────────────────────────────────
 searchBtn.addEventListener('click', doSearch);
 movieInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
 const goHero = () => {
   showSection('hero');
   movieInput.value = '';
   setTimeout(() => movieInput.focus(), 50);
 };
+
 searchAgainBtn.addEventListener('click', goHero);
 $('newSearchBtn').addEventListener('click', goHero);
+
+moreRecsBtn.addEventListener('click', () => {
+  if (busy) return;
+  doSearch({ refresh: true });
+});
 
 // Sort buttons
 document.querySelectorAll('.sort-btn').forEach(btn => {
@@ -48,27 +64,32 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
 });
 
 // ── Main search ───────────────────────────────────────────
-async function doSearch() {
-  const title = movieInput.value.trim();
-  if (!title) { showError('Please enter a movie title'); movieInput.focus(); return; }
+async function doSearch(opts = {}) {
+  const { refresh = false } = opts;
+  const title = refresh ? lastSearchTitle : movieInput.value.trim();
+  const excludeTitles = refresh ? allRecs.map(r => r.title).filter(Boolean) : [];
+
+  if (!title) { showError('Please enter a movie or TV show title'); movieInput.focus(); return; }
   if (busy) return;
+
+  if (!refresh) lastSearchTitle = title;
 
   busy = true;
   searchBtn.disabled = true;
+  moreRecsBtn.disabled = true;
   currentSort = 'default';
   document.querySelectorAll('.sort-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.sort === 'default');
   });
 
   showSection('loading');
-  startLoadingSteps();
-  startTips();
 
   try {
+    startGame();
     const res = await fetch('/api/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ movieTitle: title }),
+      body: JSON.stringify({ movieTitle: title, excludeTitles }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -84,8 +105,8 @@ async function doSearch() {
   } finally {
     busy = false;
     searchBtn.disabled = false;
-    clearLoadingSteps();
-    stopTips();
+    moreRecsBtn.disabled = false;
+    stopGame();
   }
 }
 
@@ -97,7 +118,7 @@ function getSorted(recs) {
   } else if (currentSort === 'imdb') {
     copy.sort((a, b) => (parseFloat(b.imdbRating) || 0) - (parseFloat(a.imdbRating) || 0));
   } else if (currentSort === 'rt') {
-    copy.sort((a, b) => (parseRt(b.rtRating)) - (parseRt(a.rtRating)));
+    copy.sort((a, b) => parseRt(b.rtRating) - parseRt(a.rtRating));
   }
   return copy;
 }
@@ -120,9 +141,6 @@ function renderGrid(recs) {
 }
 
 function renderSeedMovie(seed) {
-  const backdrop = $('seedBackdrop');
-  backdrop.style.backgroundImage = seed.poster ? `url('${seed.poster}')` : 'none';
-
   const posterEl   = $('seedPoster');
   const fallbackEl = $('seedPosterFallback');
   if (seed.poster) {
@@ -154,13 +172,18 @@ function renderSeedMovie(seed) {
   $('seedCredits').textContent = credits.join(' · ');
 }
 
-// ── Oscar badge helper ────────────────────────────────────
+// ── Oscar badge ───────────────────────────────────────────
 function buildOscarHtml(oscarWins, awards) {
-  // Prefer specific wins from Claude; fall back to OMDB count string
   if (oscarWins && oscarWins.length > 0) {
-    const cats = oscarWins.slice(0, 3).map(c => esc(c)).join(' · ');
-    const extra = oscarWins.length > 3 ? ` <span class="oscar-more">+${oscarWins.length - 3}</span>` : '';
-    return `<span class="oscar-badge">🏆 ${cats}${extra}</span>`;
+    const shown = oscarWins.slice(0, 2);
+    const cats  = shown.map(c => esc(c)).join(' · ');
+    const hasMore = oscarWins.length > 2;
+    const extra = hasMore ? `<span class="oscar-more"> +${oscarWins.length - 2} more</span>` : '';
+    const tooltipContent = oscarWins.map(c => `🏆 ${esc(c)}`).join('<br>');
+    const tooltip = hasMore
+      ? `<span class="oscar-tooltip">${tooltipContent}</span>`
+      : '';
+    return `<span class="oscar-badge${hasMore ? ' has-tooltip' : ''}">🏆 ${cats}${extra}${tooltip}</span>`;
   }
   if (!awards) return '';
   const nom = awards.match(/Nominated for (\d+) Oscar/i);
@@ -170,18 +193,17 @@ function buildOscarHtml(oscarWins, awards) {
   return '';
 }
 
-// ── Movie row (list layout) ───────────────────────────────
+// ── Movie row ─────────────────────────────────────────────
 function createMovieRow(movie, index) {
   const row = document.createElement('article');
   row.className = 'movie-card';
-  row.style.animationDelay = `${index * 60}ms`;
+  row.style.animationDelay = `${index * 50}ms`;
 
   const imdbUrl = movie.imdbId ? `https://www.imdb.com/title/${movie.imdbId}/` : null;
 
-  // Whole row opens IMDB
   if (imdbUrl) {
     row.addEventListener('click', e => {
-      if (e.target.tagName === 'A') return;
+      if (e.target.closest('a')) return;
       window.open(imdbUrl, '_blank', 'noopener,noreferrer');
     });
   }
@@ -214,7 +236,7 @@ function createMovieRow(movie, index) {
     <div class="row-thumb${movie.poster ? '' : ' no-img'}">
       ${movie.poster ? `<img src="${esc(movie.poster)}" alt="${esc(movie.title || '')} poster" loading="lazy">` : ''}
       <div class="row-thumb-fallback">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="2" width="20" height="20" rx="2.18"/>
           <line x1="7" y1="2" x2="7" y2="22"/>
           <line x1="17" y1="2" x2="17" y2="22"/>
@@ -233,7 +255,7 @@ function createMovieRow(movie, index) {
       <div class="row-reason">
         <div class="reason-bar"></div>
         <div class="reason-body">
-          <div class="reason-label">Why you'll love it</div>
+          <div class="reason-label">Why it matches</div>
           <p class="reason-text">${esc(movie.reason || '')}</p>
         </div>
       </div>
@@ -255,7 +277,7 @@ const STREAMING_COLORS = {
   'Disney+':            { bg: '#113CCF', text: '#fff' },
   'Apple TV+':          { bg: '#555555', text: '#fff' },
   'Paramount+':         { bg: '#0064FF', text: '#fff' },
-  'Peacock':            { bg: '#000000', text: '#fff', border: '1px solid rgba(255,255,255,0.2)' },
+  'Peacock':            { bg: '#000000', text: '#fff' },
   'Tubi':               { bg: '#FA4516', text: '#fff' },
   'Kanopy':             { bg: '#3D9BE9', text: '#fff' },
 };
@@ -263,9 +285,8 @@ const STREAMING_COLORS = {
 function buildStreamingHtml(services) {
   if (!services || services.length === 0) return '';
   const badges = services.map(s => {
-    const style = STREAMING_COLORS[s] || { bg: '#333', text: '#fff' };
-    const border = style.border ? `border:${style.border};` : '';
-    return `<span class="stream-badge" style="background:${style.bg};color:${style.text};${border}">${esc(s)}</span>`;
+    const style = STREAMING_COLORS[s] || { bg: '#6C63FF', text: '#fff' };
+    return `<span class="stream-badge" style="background:${style.bg};color:${style.text}">${esc(s)}</span>`;
   }).join('');
   return `<div class="streaming-row"><span class="streaming-label">Watch on</span>${badges}</div>`;
 }
@@ -277,78 +298,114 @@ function showSection(name) {
   resultsSection.hidden = name !== 'results';
 }
 
-// ── Movie tips (shown while loading) ─────────────────────
-const TIPS = [
-  { title: 'Anora', year: '2024', blurb: 'Sean Baker\'s Palme d\'Or winner follows a New York sex worker who impulsively marries the son of a Russian oligarch — and the chaos that follows.', poster: 'https://m.media-amazon.com/images/M/MV5BZTVmZDQ3ZTMtNDY5Ni00ZTQ5LTk2OTgtNzVkOWFlYzVkMjFhXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'The Brutalist', year: '2024', blurb: 'A Hungarian Holocaust survivor rebuilds his life in America as a visionary architect, across three and a half decades of ambition and betrayal.', poster: 'https://m.media-amazon.com/images/M/MV5BOWEzODNkNjctNjY4Ni00YzM4LTgxMjQtOWJlYzAyMzM3MDZhXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'Conclave', year: '2024', blurb: 'Edward Berger\'s thriller traps the world\'s most powerful cardinals in a secret Vatican election riddled with hidden pasts and a stunning revelation.', poster: 'https://m.media-amazon.com/images/M/MV5BZGU5YjM0NTMtY2NkOS00ZGFkLTk4ODgtNjc5YmI0MmI5YWZkXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'A Real Pain', year: '2024', blurb: 'Jesse Eisenberg and Kieran Culkin play mismatched cousins on a Holocaust remembrance tour of Poland — funny, heartbreaking, and quietly profound.', poster: 'https://m.media-amazon.com/images/M/MV5BZWVkM2RkMGQtMDY4MS00NTM2LTlkYjctMGM4YTM3MGI0ODliXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'Dune: Part Two', year: '2024', blurb: 'Denis Villeneuve\'s colossal sequel follows Paul Atreides into the heart of Arrakis — a sandworm-riding, empire-shaking, visually unprecedented sci-fi epic.', poster: 'https://m.media-amazon.com/images/M/MV5BN2QyZGU4ZDctOWMzMy00NTc5LThlOGQtOGUxNWVlNzlkMzVhXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'All We Imagine as Light', year: '2024', blurb: 'Payal Kapadia\'s Cannes Grand Prix winner follows two Mumbai nurses navigating longing and quiet crisis in a city that never pauses for grief.', poster: 'https://m.media-amazon.com/images/M/MV5BYjQ0ZmI2YmYtNmI3YS00MDljLWFiMTAtOGQ4ZTlkNjc5MGEzXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'Emilia Pérez', year: '2024', blurb: 'A Mexican cartel boss transitions genders with help from a lawyer — Jacques Audiard\'s genre-defying musical thriller swept Cannes with 4 wins.', poster: 'https://m.media-amazon.com/images/M/MV5BZDBmYjhjOGQtNDg2MC00NDc5LWFlNmYtMjZhZmI1N2U4YjNhXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'Nickel Boys', year: '2024', blurb: 'RaMell Ross reimagines Colson Whitehead\'s Pulitzer-winning novel entirely in first-person perspective — a technical and emotional breakthrough.', poster: 'https://m.media-amazon.com/images/M/MV5BOTc3MjA2MDYtZDE0Yi00Nzg2LTk4YTAtNjQ5ZTU5OWQyMzYwXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'I Saw the TV Glow', year: '2024', blurb: 'Jane Schoenbrun\'s hypnotic horror drifts through suburban adolescence, suburban identity, and a TV show that may have been more real than the world.', poster: 'https://m.media-amazon.com/images/M/MV5BNzkyNzZkZmQtMTdhMy00OGJlLWJhMWEtODA5ZGZhMjE1ZmVmXkEyXkFqcGc@._V1_SX300.jpg' },
-  { title: 'Challengers', year: '2024', blurb: 'Luca Guadagnino turns a tennis love triangle into a pulse-pounding exploration of desire, competition, and the way old relationships never really end.', poster: 'https://m.media-amazon.com/images/M/MV5BYWQ4ZjMzMWQtNTYxNi00YWMwLWI5MDctZjkwZmMzYzBmOGMzXkEyXkFqcGc@._V1_SX300.jpg' },
+// ── Emoji Movie Quiz ──────────────────────────────────────
+const EMOJI_QUIZ = [
+  { emojis: '🦁👑🌍', answer: 'The Lion King',       options: ['The Lion King', 'Tarzan', 'Madagascar', 'The Jungle Book'] },
+  { emojis: '🤖❤️🌱🚀', answer: 'WALL-E',             options: ['WALL-E', 'Ex Machina', 'I, Robot', 'Interstellar'] },
+  { emojis: '🌊🚢❤️🧊', answer: 'Titanic',            options: ['Titanic', 'Cast Away', 'The Perfect Storm', 'Poseidon'] },
+  { emojis: '🧙‍♂️💍🔥🗡️', answer: 'The Lord of the Rings', options: ['The Lord of the Rings', 'Harry Potter', 'The Hobbit', 'Merlin'] },
+  { emojis: '🦈🏊😱',   answer: 'Jaws',               options: ['Jaws', 'The Meg', 'Deep Blue Sea', 'Open Water'] },
+  { emojis: '🐠🔍🌊🐢', answer: 'Finding Nemo',       options: ['Finding Nemo', 'Finding Dory', 'The Little Mermaid', 'Shark Tale'] },
+  { emojis: '🧸🚀⭐🤠', answer: 'Toy Story',           options: ['Toy Story', 'Bolt', 'Monsters, Inc.', 'Cars'] },
+  { emojis: '👻🔫😄🏙️', answer: 'Ghostbusters',       options: ['Ghostbusters', 'Men in Black', 'Beetlejuice', 'The Frighteners'] },
+  { emojis: '🦕🌴⚠️🏃', answer: 'Jurassic Park',      options: ['Jurassic Park', 'King Kong', 'Land of the Lost', 'Dinosaur'] },
+  { emojis: '❄️👸⛄🎵', answer: 'Frozen',              options: ['Frozen', 'Tangled', 'Snow White', 'Cinderella'] },
+  { emojis: '🕷️🏙️🕸️',  answer: 'Spider-Man',         options: ['Spider-Man', 'Batman', 'Ant-Man', 'Superman'] },
+  { emojis: '💊🔵🔴🐇', answer: 'The Matrix',         options: ['The Matrix', 'Inception', 'Tron', 'Minority Report'] },
+  { emojis: '🧊🏔️🪓😰', answer: 'The Shining',       options: ['The Shining', 'Misery', 'Psycho', 'It'] },
+  { emojis: '🚀🌌⏰🌊', answer: 'Interstellar',       options: ['Interstellar', 'Gravity', 'The Martian', 'Contact'] },
+  { emojis: '🎭😄😢🏠', answer: 'Inside Out',         options: ['Inside Out', 'Soul', 'Coco', 'Up'] },
+  { emojis: '🕶️💼💵🎵', answer: 'Pulp Fiction',      options: ['Pulp Fiction', 'Reservoir Dogs', 'The Big Lebowski', 'Kill Bill'] },
+  { emojis: '🏎️🌵🌅🔥', answer: 'Mad Max: Fury Road', options: ['Mad Max: Fury Road', 'Fast & Furious', 'Death Race', 'Fury'] },
+  { emojis: '👦🏠🔧😄', answer: 'Home Alone',         options: ['Home Alone', 'Gremlins', 'Problem Child', 'The Goonies'] },
+  { emojis: '🐋🌊🎵🏝️', answer: 'Moby Dick',         options: ['Moby Dick', 'Life of Pi', 'Cast Away', 'The Old Man and the Sea'] },
+  { emojis: '🧟‍♂️🌍🚗💨', answer: 'The Walking Dead', options: ['The Walking Dead', 'World War Z', 'Zombieland', '28 Days Later'] },
 ];
 
-let tipIdx = 0;
-let tipInterval = null;
+let quizQueue = [];
+let currentQuestion = null;
 
-function showTip(idx) {
-  const tip = TIPS[idx % TIPS.length];
-  const card = $('movieTipCard');
-  card.style.animation = 'none';
-  void card.offsetWidth; // reflow to restart
-  card.style.animation = '';
+function startGame() {
+  gameScore = 0;
+  $('gameScore').textContent = '0';
+  $('gameFeedback').textContent = '';
+  $('gameFeedback').className = 'game-feedback';
+  gameActive = true;
 
-  const poster = $('tipPoster');
-  const ph = $('tipPosterPh');
-  if (tip.poster) {
-    poster.src = tip.poster;
-    poster.style.display = 'block';
-    ph.style.display = 'none';
-  } else {
-    poster.style.display = 'none';
-    ph.style.display = 'block';
+  // Shuffle quiz questions
+  quizQueue = [...EMOJI_QUIZ].sort(() => Math.random() - 0.5);
+  showNextQuestion();
+}
+
+function stopGame() {
+  gameActive = false;
+  clearTimeout(gameInterval);
+}
+
+function showNextQuestion() {
+  if (!gameActive) return;
+  if (quizQueue.length === 0) {
+    quizQueue = [...EMOJI_QUIZ].sort(() => Math.random() - 0.5);
   }
-  $('tipTitle').textContent = tip.title;
-  $('tipYear').textContent  = tip.year;
-  $('tipBlurb').textContent = tip.blurb;
+  currentQuestion = quizQueue.pop();
+
+  const emojiEl   = $('gameEmojis');
+  const optionsEl = $('gameOptions');
+  const feedbackEl = $('gameFeedback');
+
+  // Reset animation
+  emojiEl.style.animation = 'none';
+  void emojiEl.offsetWidth;
+  emojiEl.style.animation = '';
+  emojiEl.textContent = currentQuestion.emojis;
+
+  feedbackEl.textContent = '';
+  feedbackEl.className = 'game-feedback';
+
+  // Shuffle options
+  const shuffled = [...currentQuestion.options].sort(() => Math.random() - 0.5);
+  optionsEl.innerHTML = '';
+  shuffled.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'game-option';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => handleAnswer(btn, opt));
+    optionsEl.appendChild(btn);
+  });
 }
 
-function startTips() {
-  tipIdx = Math.floor(Math.random() * TIPS.length);
-  showTip(tipIdx);
-  tipInterval = setInterval(() => {
-    tipIdx++;
-    showTip(tipIdx);
-  }, 4000);
+function handleAnswer(btn, selected) {
+  if (!gameActive) return;
+  const correct = selected === currentQuestion.answer;
+  const feedbackEl = $('gameFeedback');
+  const optionsEl  = $('gameOptions');
+
+  // Disable all buttons and highlight
+  optionsEl.querySelectorAll('.game-option').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === currentQuestion.answer) b.classList.add('correct');
+    else if (b === btn && !correct) b.classList.add('wrong');
+  });
+
+  if (correct) {
+    gameScore++;
+    $('gameScore').textContent = gameScore;
+    feedbackEl.textContent = '✓ Correct!';
+    feedbackEl.className = 'game-feedback correct';
+  } else {
+    feedbackEl.textContent = `✗ It was ${currentQuestion.answer}`;
+    feedbackEl.className = 'game-feedback wrong';
+  }
+
+  // Auto-advance after 1.6s
+  gameInterval = setTimeout(() => {
+    if (gameActive) showNextQuestion();
+  }, 1600);
 }
-
-function stopTips() { clearInterval(tipInterval); }
-
-// ── Loading steps ─────────────────────────────────────────
-let stepInterval = null;
-const STEPS = ['step1', 'step2', 'step3'];
-
-function startLoadingSteps() {
-  STEPS.forEach(id => { $(id).className = 'step'; });
-  $(STEPS[0]).classList.add('active');
-  let i = 0;
-  clearInterval(stepInterval);
-  stepInterval = setInterval(() => {
-    $(STEPS[i]).classList.remove('active');
-    $(STEPS[i]).classList.add('done');
-    i++;
-    if (i < STEPS.length) $(STEPS[i]).classList.add('active');
-    else clearInterval(stepInterval);
-  }, 1800);
-}
-
-function clearLoadingSteps() { clearInterval(stepInterval); }
 
 // ── Error toast ───────────────────────────────────────────
 let toastTimer = null;
+
 function showError(msg) {
   toastMsg.textContent = msg;
   toast.classList.add('show');

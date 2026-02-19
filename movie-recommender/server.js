@@ -52,7 +52,7 @@ function parseOMDB(data) {
 }
 
 app.post('/api/recommend', async (req, res) => {
-  const { movieTitle } = req.body;
+  const { movieTitle, excludeTitles = [] } = req.body;
   if (!movieTitle?.trim()) {
     return res.status(400).json({ error: 'Movie title is required' });
   }
@@ -62,6 +62,10 @@ app.post('/api/recommend', async (req, res) => {
     const seedOMDB = await fetchFromOMDB(movieTitle);
     const seedYear = seedOMDB?.Year?.match(/\d{4}/)?.[0] || '';
 
+    const excludeClause = excludeTitles.length > 0
+      ? `\nDo NOT recommend any of these titles: ${excludeTitles.join(', ')}.`
+      : '';
+
     // Ask Claude for recommendations
     const message = await anthropic.messages.create({
       model: 'claude-opus-4-6',
@@ -69,15 +73,15 @@ app.post('/api/recommend', async (req, res) => {
       system: 'You are a passionate cinephile and film critic with encyclopedic knowledge of world cinema across all eras and genres. You give thoughtful, specific recommendations grounded in real cinematic connections.',
       messages: [{
         role: 'user',
-        content: `Recommend exactly 10 movies for someone who loves "${movieTitle}"${seedYear ? ` (${seedYear})` : ''}.
+        content: `Recommend exactly 10 movies or TV shows for someone who loves "${movieTitle}"${seedYear ? ` (${seedYear})` : ''}.${excludeClause}
 
 For each recommendation:
-- Write 2–3 sentences explaining the specific connection — reference themes, directorial style, emotional tone, narrative structure, or visual language bridging both films.
-- List the major streaming platforms where this movie is currently available (e.g. Netflix, Amazon Prime Video, Max, Hulu, Disney+, Apple TV+, Paramount+, Peacock). Only list platforms you are confident about. Use an empty array if unsure.
-- List any specific Academy Award (Oscar) categories this film won (e.g. ["Best Picture", "Best Director"]). Use an empty array if it won none.
+- Write exactly 1 sentence (max 25 words) explaining the specific connection to "${movieTitle}" — what themes, tone, style, or emotional experience they share.
+- List the major streaming platforms where this is currently available (Netflix, Amazon Prime Video, Max, Hulu, Disney+, Apple TV+, Paramount+, Peacock). Only list platforms you are confident about. Use [] if unsure.
+- List any specific Academy Award (Oscar) categories this film won (e.g. ["Best Picture", "Best Director"]). Use [] if it won none.
 
 Respond ONLY with a raw JSON array (no markdown, no code fences):
-[{"title":"Exact Movie Title","year":"YYYY","reason":"Specific, insightful reason.","streaming":["Netflix","Max"],"oscarWins":["Best Picture","Best Director"]}]`,
+[{"title":"Exact Title","year":"YYYY","reason":"One sentence connecting it to ${movieTitle}.","streaming":["Netflix"],"oscarWins":["Best Picture"]}]`,
       }],
     });
 
