@@ -110,13 +110,15 @@
 
         <div class="game-card">
           <div class="game-header-row">
-            <span class="game-label">🎮 Movie Quiz</span>
+            <span class="game-label">🎬 Movie Trivia</span>
             <div class="game-score-display">
               Score <span class="game-score-num" id="gameScore">0</span>
             </div>
           </div>
-          <div class="game-emojis" id="gameEmojis">🎬</div>
-          <p class="game-question">Which movie do these emojis represent?</p>
+          <div class="trivia-category-row">
+            <span class="trivia-category-badge" id="triviaCategory">—</span>
+          </div>
+          <p class="game-question" id="triviaQuestion">Loading…</p>
           <div class="game-options" id="gameOptions"></div>
           <div class="game-feedback" id="gameFeedback"></div>
         </div>
