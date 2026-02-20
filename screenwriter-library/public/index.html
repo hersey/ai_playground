@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Scribe — Screenwriter's Material Library</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══ APP BAR ═══════════════════════════════════════════════════ -->
+  <header class="app-bar">
+    <div class="app-bar-row">
+      <div class="app-logo">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#6C63FF"/>
+              <stop offset="100%" stop-color="#00B894"/>
+            </linearGradient>
+          </defs>
+          <rect width="30" height="30" rx="8" fill="url(#logoGrad)"/>
+          <path d="M15 6L23 19H15H7L15 6Z" stroke="white" stroke-width="1.6" stroke-linejoin="round" fill="none"/>
+          <line x1="15" y1="19" x2="15" y2="25" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="11" y1="15" x2="19" y2="15" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span>Scribe</span>
+      </div>
+      <div class="library-badge" id="libraryBadge" hidden>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span id="libraryCount">0</span>
+      </div>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="capture">Capture</button>
+      <button class="view-btn" data-view="browse">Search</button>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN CONTENT ══════════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ─── CAPTURE VIEW ─────────────────────────────────────────── -->
+    <div id="captureView">
+
+      <!-- PICKER SCREEN -->
+      <div id="pickerScreen" class="picker">
+        <p class="picker-label">What do you want to capture?</p>
+        <div class="picker-grid">
+          <button class="picker-card" data-tab="ideas">
+            <div class="picker-icon picker-icon--idea">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/>
+                <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+              </svg>
+            </div>
+            <span class="picker-name">New Idea</span>
+            <span class="picker-desc">Script, scene or concept</span>
+          </button>
+
+          <button class="picker-card" data-tab="characters">
+            <div class="picker-icon picker-icon--character">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <span class="picker-name">New Character</span>
+            <span class="picker-desc">Someone worth writing about</span>
+          </button>
+
+          <button class="picker-card" data-tab="stories">
+            <div class="picker-icon picker-icon--story">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <span class="picker-name">Past Story</span>
+            <span class="picker-desc">A story that stuck with you</span>
+          </button>
+
+          <button class="picker-card" data-tab="random">
+            <div class="picker-icon picker-icon--random">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </div>
+            <span class="picker-name">Random</span>
+            <span class="picker-desc">Anything that doesn't fit</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- IDEAS FORM -->
+      <form class="form hidden" id="ideaForm" data-tab="ideas" novalidate>
+        <button type="button" class="back-btn" id="ideaBackBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <h2 class="form-heading">New Idea</h2>
+
+        <div class="field">
+          <label class="label" for="ideaTitle">Title <span class="req">*</span></label>
+          <input type="text" id="ideaTitle" class="input" placeholder="What's the idea?" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label class="label" for="ideaType">Type</label>
+          <select id="ideaType" class="select">
+            <option value="">— select type —</option>
+            <option>Script Idea</option>
+            <option>Scene Idea</option>
+            <option>Concept</option>
+            <option>Theme</option>
+            <option>Dialogue</option>
+            <option>Visual</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label" for="ideaDetails">Details</label>
+          <textarea id="ideaDetails" class="textarea" placeholder="Expand on the idea…" rows="4"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label">Tags</label>
+          <div class="tag-picker" id="ideaTagPicker" data-form="ideas"></div>
+        </div>
+
+        <button type="submit" class="save-btn" id="ideaSaveBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span class="btn-text">Save to Notion</span>
+        </button>
+      </form>
+
+      <!-- CHARACTERS FORM -->
+      <form class="form hidden" id="characterForm" data-tab="characters" novalidate>
+        <button type="button" class="back-btn" id="charBackBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <h2 class="form-heading">New Character</h2>
+
+        <div class="field">
+          <label class="label" for="charName">Name <span class="req">*</span></label>
+          <input type="text" id="charName" class="input" placeholder="Real name or nickname" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label class="label" for="charDescription">Description</label>
+          <textarea id="charDescription" class="textarea" placeholder="Who are they? Physical appearance, vibe…" rows="3"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label" for="charWhenEncountered">When I encountered them</label>
+          <textarea id="charWhenEncountered" class="textarea" placeholder="Context of the encounter…" rows="2"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label" for="charWhyInteresting">Why they are interesting</label>
+          <textarea id="charWhyInteresting" class="textarea" placeholder="What makes them memorable or usable…" rows="3"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label">Tags</label>
+          <div class="tag-picker" id="charTagPicker" data-form="characters"></div>
+        </div>
+
+        <button type="submit" class="save-btn" id="charSaveBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span class="btn-text">Save to Notion</span>
+        </button>
+      </form>
+
+      <!-- PAST STORIES FORM -->
+      <form class="form hidden" id="storyForm" data-tab="stories" novalidate>
+        <button type="button" class="back-btn" id="storyBackBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <h2 class="form-heading">Past Story</h2>
+
+        <div class="field">
+          <label class="label" for="storyWhat">What <span class="req">*</span></label>
+          <input type="text" id="storyWhat" class="input" placeholder="What happened? Short title." autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label class="label" for="storyWhen">When</label>
+          <input type="text" id="storyWhen" class="input" placeholder="e.g. Last Tuesday, Summer 2019…">
+        </div>
+
+        <div class="field">
+          <label class="label" for="storyWhyInteresting">Why interesting</label>
+          <textarea id="storyWhyInteresting" class="textarea" placeholder="Why does this story stick with you…" rows="4"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label">Tags</label>
+          <div class="tag-picker" id="storyTagPicker" data-form="stories"></div>
+        </div>
+
+        <button type="submit" class="save-btn" id="storySaveBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span class="btn-text">Save to Notion</span>
+        </button>
+      </form>
+
+      <!-- RANDOM FORM -->
+      <form class="form hidden" id="randomForm" data-tab="random" novalidate>
+        <button type="button" class="back-btn" id="randomBackBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <h2 class="form-heading">Random</h2>
+
+        <div class="field">
+          <label class="label" for="randomTitle">Title <span class="req">*</span></label>
+          <input type="text" id="randomTitle" class="input" placeholder="Anything — overheard, observed, felt…" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label class="label" for="randomDetails">Details</label>
+          <textarea id="randomDetails" class="textarea" placeholder="Capture it before you forget…" rows="5"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="label">Tags</label>
+          <div class="tag-picker" id="randomTagPicker" data-form="random"></div>
+        </div>
+
+        <button type="submit" class="save-btn" id="randomSaveBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span class="btn-text">Save to Notion</span>
+        </button>
+      </form>
+
+    </div><!-- /captureView -->
+
+    <!-- ─── BROWSE VIEW ──────────────────────────────────────────── -->
+    <div id="browseView" hidden>
+
+      <div class="browse-top">
+        <div class="search-wrap">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="search" id="searchInput" class="search-input" placeholder="Search your library…" autocomplete="off">
+          <button class="search-clear" id="searchClear" hidden aria-label="Clear search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="filter-row" id="filterRow">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="idea">Ideas</button>
+          <button class="filter-btn" data-filter="character">Characters</button>
+          <button class="filter-btn" data-filter="story">Stories</button>
+          <button class="filter-btn" data-filter="random">Random</button>
+          <button class="refresh-btn" id="refreshBtn" title="Refresh">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 .49-3.74"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="browse-loading" id="browseLoading" hidden>
+        <div class="spinner"></div>
+        <p>Loading library…</p>
+      </div>
+
+      <div class="browse-loading" id="searchLoading" hidden>
+        <div class="spinner"></div>
+        <p>Searching Notion…</p>
+      </div>
+
+      <div class="browse-empty" id="browseEmpty" hidden>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-4)">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <p class="empty-title">Nothing here yet</p>
+        <p class="empty-sub" id="emptySubText">Switch to Capture to add your first entry.</p>
+      </div>
+
+      <div id="materialsList"></div>
+
+    </div><!-- /browseView -->
+
+  </main>
+
+  <!-- ═══ BOTTOM TAB BAR ════════════════════════════════════════════ -->
+  <nav class="tab-bar" id="tabBar">
+    <button class="tab active" data-tab="ideas">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/>
+        <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+      </svg>
+      <span>Ideas</span>
+    </button>
+    <button class="tab" data-tab="characters">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>Characters</span>
+    </button>
+    <button class="tab" data-tab="stories">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+      <span>Stories</span>
+    </button>
+    <button class="tab" data-tab="random">
+      <!-- Lightning bolt / random -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      <span>Random</span>
+    </button>
+  </nav>
+
+  <!-- ═══ TOAST ══════════════════════════════════════════════════════ -->
+  <div class="toast" id="toast" role="alert" aria-live="polite">
+    <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span id="toastMsg"></span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
