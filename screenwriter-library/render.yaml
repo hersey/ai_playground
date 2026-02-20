@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: scribe
+    runtime: node
+    rootDir: screenwriter-library
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: NOTION_API_KEY
+        sync: false
+      - key: NOTION_IDEAS_DB_ID
+        sync: false
+      - key: NOTION_CHARACTERS_DB_ID
+        sync: false
+      - key: NOTION_STORIES_DB_ID
+        sync: false
+      - key: NOTION_RANDOM_DB_ID
+        sync: false
+      - key: PORT
+        value: 10000
