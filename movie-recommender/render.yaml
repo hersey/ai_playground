@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: marquee
+    runtime: node
+    rootDir: movie-recommender
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OMDB_API_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: PORT
+        value: 10000
