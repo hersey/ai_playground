@@ -1,47 +1,69 @@
 /* ═══════════════════════════════════════════════════════════
-   CINEMATCH — Frontend Logic
+   MARQUEE — Frontend Logic
    ═══════════════════════════════════════════════════════════ */
 
 const $ = id => document.getElementById(id);
+const TV_TAB = 'TV';
 
 // ── State ────────────────────────────────────────────────
 let busy = false;
 let allRecs = [];
 let currentSort = 'default';
-let lastSearchTitle = '';
+let lastSearchQuery = '';
+let currentSection = 'hero';
+let prevSection = 'hero';
+let watchlistData = [];
+let watchlistFilter = 'all';
+let watchlistTypeFilter = 'all'; // 'all' | 'movie' | 'tv'
 let gameScore = 0;
 let gameInterval = null;
 let gameActive = false;
 
 // ── Elements ─────────────────────────────────────────────
-const heroSection    = $('heroSection');
-const loadingScreen  = $('loadingScreen');
-const resultsSection = $('resultsSection');
-const movieInput     = $('movieInput');
-const searchBtn      = $('searchBtn');
-const searchAgainBtn = $('searchAgainBtn');
-const moreRecsBtn    = $('moreRecsBtn');
-const moviesGrid     = $('moviesGrid');
-const toast          = $('toast');
-const toastMsg       = $('toastMsg');
+const heroSection      = $('heroSection');
+const loadingScreen    = $('loadingScreen');
+const resultsSection   = $('resultsSection');
+const watchlistSection = $('watchlistSection');
+const movieInput       = $('movieInput');
+const searchBtn        = $('searchBtn');
+const searchAgainBtn   = $('searchAgainBtn');
+const moreRecsBtn      = $('moreRecsBtn');
+const moviesGrid       = $('moviesGrid');
+const toast            = $('toast');
+const toastMsg         = $('toastMsg');
 
-// ── Quick search ──────────────────────────────────────────
-function quickSearch(title) {
-  movieInput.value = title;
-  doSearch();
-}
+// ── Textarea auto-resize ──────────────────────────────────
+movieInput.addEventListener('input', () => {
+  movieInput.style.height = 'auto';
+  const newH = Math.min(movieInput.scrollHeight, 140);
+  movieInput.style.height = newH + 'px';
+  movieInput.style.overflowY = movieInput.scrollHeight > 140 ? 'auto' : 'hidden';
+});
 
-document.querySelectorAll('.pill[data-movie]').forEach(btn => {
-  btn.addEventListener('click', () => quickSearch(btn.dataset.movie));
+// ── Quick search pills ────────────────────────────────────
+document.querySelectorAll('.pill[data-query]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    movieInput.value = btn.dataset.query;
+    movieInput.style.height = 'auto';
+    movieInput.style.height = Math.min(movieInput.scrollHeight, 140) + 'px';
+    doSearch();
+  });
 });
 
 // ── Event listeners ───────────────────────────────────────
 searchBtn.addEventListener('click', doSearch);
-movieInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+movieInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    doSearch();
+  }
+});
 
 const goHero = () => {
   showSection('hero');
   movieInput.value = '';
+  movieInput.style.height = '';
   setTimeout(() => movieInput.focus(), 50);
 };
 
@@ -63,16 +85,50 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
   });
 });
 
+// Nav watchlist button
+$('navWatchlistBtn').addEventListener('click', () => {
+  showSection('watchlist');
+  loadWatchlist();
+});
+
+// Back from watchlist
+$('backFromWatchlistBtn').addEventListener('click', () => {
+  showSection(prevSection);
+});
+
+// New Search from watchlist
+$('watchlistNewSearchBtn').addEventListener('click', goHero);
+
+// Watchlist status filter tabs
+document.querySelectorAll('#watchlistFilterTabs .filter-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#watchlistFilterTabs .filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    watchlistFilter = btn.dataset.filter;
+    renderWatchlist();
+  });
+});
+
+// Watchlist type filter tabs
+document.querySelectorAll('#watchlistTypeFilterTabs .filter-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#watchlistTypeFilterTabs .filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    watchlistTypeFilter = btn.dataset.filter;
+    renderWatchlist();
+  });
+});
+
 // ── Main search ───────────────────────────────────────────
 async function doSearch(opts = {}) {
   const { refresh = false } = opts;
-  const title = refresh ? lastSearchTitle : movieInput.value.trim();
+  const query = refresh ? lastSearchQuery : movieInput.value.trim();
   const excludeTitles = refresh ? allRecs.map(r => r.title).filter(Boolean) : [];
 
-  if (!title) { showError('Please enter a movie or TV show title'); movieInput.focus(); return; }
+  if (!query) { showError('Please describe what you want to watch'); movieInput.focus(); return; }
   if (busy) return;
 
-  if (!refresh) lastSearchTitle = title;
+  if (!refresh) lastSearchQuery = query;
 
   busy = true;
   searchBtn.disabled = true;
@@ -89,7 +145,7 @@ async function doSearch(opts = {}) {
     const res = await fetch('/api/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ movieTitle: title, excludeTitles }),
+      body: JSON.stringify({ query, excludeTitles }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -129,8 +185,8 @@ function parseRt(val) {
 }
 
 // ── Render ────────────────────────────────────────────────
-function renderResults({ seed, recommendations }) {
-  renderSeedMovie(seed);
+function renderResults({ seed, queryLabel, recommendations }) {
+  renderSeedMovie(seed, queryLabel);
   renderGrid(getSorted(recommendations));
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -140,9 +196,35 @@ function renderGrid(recs) {
   recs.forEach((movie, i) => moviesGrid.appendChild(createMovieRow(movie, i)));
 }
 
-function renderSeedMovie(seed) {
+function renderSeedMovie(seed, queryLabel) {
+  const banner = $('seedBanner');
+  const posterWrap = $('seedPosterWrap');
   const posterEl   = $('seedPoster');
   const fallbackEl = $('seedPosterFallback');
+  const seedInfo   = $('seedInfo');
+
+  // Remove any existing watchlist button from seed banner
+  const existingWBtn = seedInfo.querySelector('.watchlist-btn');
+  if (existingWBtn) existingWBtn.remove();
+
+  if (!seed) {
+    // Query mode — no seed movie identified
+    banner.classList.add('seed-banner--query');
+    posterWrap.hidden = true;
+    $('seedLabel').textContent = 'Your search';
+    $('seedTitle').textContent = queryLabel || '';
+    $('seedQueryTag').hidden = true;
+    $('seedRatings').innerHTML = '';
+    $('seedGenres').innerHTML = '';
+    $('seedSynopsis').textContent = '';
+    $('seedCredits').textContent = '';
+    return;
+  }
+
+  // Movie mode — seed movie identified
+  banner.classList.remove('seed-banner--query');
+  posterWrap.hidden = false;
+
   if (seed.poster) {
     posterEl.src = seed.poster;
     posterEl.alt = `${seed.title || ''} poster`;
@@ -153,8 +235,17 @@ function renderSeedMovie(seed) {
     fallbackEl.hidden = false;
   }
 
-  const year = seed.year ? ` (${seed.year.match(/\d{4}/)?.[0] || seed.year})` : '';
+  $('seedLabel').textContent = 'Because you liked';
+
+  const year = seed.year ? ` (${seed.year.match?.(/\d{4}/)?.[0] || seed.year})` : '';
   $('seedTitle').textContent = (seed.title || 'Unknown') + year;
+
+  if (queryLabel) {
+    $('seedQueryTag').textContent = `"${queryLabel}"`;
+    $('seedQueryTag').hidden = false;
+  } else {
+    $('seedQueryTag').hidden = true;
+  }
 
   $('seedRatings').innerHTML = [
     seed.imdbRating ? `<span class="badge badge-imdb badge-lg">★ ${seed.imdbRating} IMDb</span>` : '',
@@ -170,6 +261,15 @@ function renderSeedMovie(seed) {
   if (seed.director) credits.push(`Directed by ${seed.director}`);
   if (seed.actors) credits.push(seed.actors.split(', ').slice(0, 3).join(', '));
   $('seedCredits').textContent = credits.join(' · ');
+
+  // Add watchlist button for seed
+  const inWL = isInWatchlist(seed.title);
+  const wBtn = document.createElement('button');
+  wBtn.className = `watchlist-btn${inWL ? ' watchlist-btn--added' : ''}`;
+  wBtn.textContent = inWL ? '✓ Added' : '＋ Watchlist';
+  if (inWL) wBtn.disabled = true;
+  wBtn.addEventListener('click', () => addToWatchlist(seed, wBtn));
+  seedInfo.appendChild(wBtn);
 }
 
 // ── Oscar badge ───────────────────────────────────────────
@@ -203,13 +303,13 @@ function createMovieRow(movie, index) {
 
   if (imdbUrl) {
     row.addEventListener('click', e => {
-      if (e.target.closest('a')) return;
+      if (e.target.closest('a') || e.target.closest('.watchlist-btn')) return;
       window.open(imdbUrl, '_blank', 'noopener,noreferrer');
     });
   }
 
   const metaParts = [
-    movie.year?.match(/\d{4}/)?.[0] || movie.year,
+    movie.year?.match?.(/\d{4}/)?.[0] || movie.year,
     movie.runtime,
     movie.director ? `Dir. ${movie.director}` : '',
   ].filter(Boolean);
@@ -230,6 +330,8 @@ function createMovieRow(movie, index) {
     .map(g => `<span class="genre-tag">${esc(g)}</span>`).join('');
 
   const streamingHtml = buildStreamingHtml(movie.streaming || []);
+
+  const inWL = isInWatchlist(movie.title);
 
   row.innerHTML = `
     <div class="row-num">${index + 1}</div>
@@ -260,8 +362,19 @@ function createMovieRow(movie, index) {
         </div>
       </div>
       ${streamingHtml}
+      <button class="watchlist-btn${inWL ? ' watchlist-btn--added' : ''}" ${inWL ? 'disabled' : ''}>
+        ${inWL ? '✓ Added' : '＋ Watchlist'}
+      </button>
     </div>
   `;
+
+  const wBtn = row.querySelector('.watchlist-btn');
+  if (wBtn) {
+    wBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      addToWatchlist(movie, wBtn);
+    });
+  }
 
   return row;
 }
@@ -293,9 +406,311 @@ function buildStreamingHtml(services) {
 
 // ── Section display ───────────────────────────────────────
 function showSection(name) {
-  heroSection.hidden    = name !== 'hero';
-  loadingScreen.hidden  = name !== 'loading';
-  resultsSection.hidden = name !== 'results';
+  if (name !== 'watchlist') prevSection = currentSection;
+  currentSection = name;
+  heroSection.hidden      = name !== 'hero';
+  loadingScreen.hidden    = name !== 'loading';
+  resultsSection.hidden   = name !== 'results';
+  watchlistSection.hidden = name !== 'watchlist';
+}
+
+// ── Watchlist title set (server-synced, title-based) ─────
+const watchlistTitles = new Set();
+
+function isInWatchlist(title) {
+  return !!title && watchlistTitles.has(title.toLowerCase());
+}
+
+function markInWatchlist(title) {
+  if (title) watchlistTitles.add(title.toLowerCase());
+}
+
+function unmarkInWatchlist(title) {
+  if (title) watchlistTitles.delete(title.toLowerCase());
+}
+
+// ── Awards formatter (Oscars for films, Emmy for TV) ─────
+function formatAwardsForWatchlist(movie) {
+  const isTv = movie.type === 'series' || movie.type === 'episode';
+  if (isTv) {
+    if (!movie.awards) return '';
+    const won = movie.awards.match(/Won (\d+) Emmy/i);
+    if (won) return `${won[1]} Emmy win${parseInt(won[1]) > 1 ? 's' : ''}`;
+    const nom = movie.awards.match(/Nominated for (\d+) Emmy/i);
+    if (nom) return `${nom[1]} Emmy nomination${parseInt(nom[1]) > 1 ? 's' : ''}`;
+    return '';
+  }
+  // Film — use specific Oscar category names from Claude
+  if (movie.oscarWins && movie.oscarWins.length > 0) {
+    return movie.oscarWins.join(' · ');
+  }
+  return '';
+}
+
+// ── Add to Watchlist ──────────────────────────────────────
+async function addToWatchlist(movie, btn) {
+  if (!movie || btn.disabled) return;
+
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.innerHTML = '<span class="watchlist-spinner"></span>';
+
+  try {
+    const res = await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: movie.title,
+        year: movie.year,
+        director: movie.director,
+        genre: Array.isArray(movie.genre) ? movie.genre.join(', ') : (movie.genre || ''),
+        awards: formatAwardsForWatchlist(movie),
+        actors: movie.actors || '',
+        type: movie.type || 'movie',
+        imdbRating: movie.imdbRating || '',
+        rtRating: movie.rtRating || '',
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Error ${res.status}`);
+    }
+
+    markInWatchlist(movie.title);
+    btn.textContent = '✓ Added';
+    btn.classList.add('watchlist-btn--added');
+
+    // Update count badge without full reload
+    updateWatchlistCountBadge();
+
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = origText;
+    showError(err.message || 'Failed to add to watchlist');
+  }
+}
+
+// ── Watchlist count badge ─────────────────────────────────
+async function updateWatchlistCountBadge() {
+  try {
+    const res = await fetch('/api/watchlist');
+    if (!res.ok) return;
+    const items = await res.json();
+    // Sync the in-memory set with the sheet — single source of truth
+    watchlistTitles.clear();
+    items.forEach(item => { if (item.title) watchlistTitles.add(item.title.toLowerCase()); });
+    const badge = $('watchlistCount');
+    const count = items.length;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.hidden = false;
+    } else {
+      badge.hidden = true;
+    }
+  } catch { /* silent */ }
+}
+
+// ── Load & Render Watchlist ───────────────────────────────
+async function loadWatchlist() {
+  const listEl = $('watchlistList');
+  listEl.innerHTML = '<p style="text-align:center;color:var(--text-3);padding:30px 0">Loading…</p>';
+
+  try {
+    const res = await fetch('/api/watchlist');
+    watchlistData = await res.json();
+
+    // Update header count
+    const badge = $('watchlistCount');
+    const count = watchlistData.length;
+    badge.textContent = count;
+    badge.hidden = count === 0;
+    $('watchlistHeaderCount').textContent = count > 0 ? `${count} title${count !== 1 ? 's' : ''}` : '';
+
+    renderWatchlist();
+  } catch (err) {
+    listEl.innerHTML = `<div class="watchlist-empty">Failed to load watchlist. Check your Google Sheets configuration.</div>`;
+  }
+}
+
+function renderWatchlist() {
+  const listEl = $('watchlistList');
+  let filtered = watchlistData;
+  if (watchlistFilter !== 'all') filtered = filtered.filter(item => item.status === watchlistFilter);
+  if (watchlistTypeFilter === 'movie') filtered = filtered.filter(item => item.tab !== TV_TAB);
+  if (watchlistTypeFilter === 'tv')    filtered = filtered.filter(item => item.tab === TV_TAB);
+
+  if (filtered.length === 0) {
+    const msg = watchlistData.length === 0
+      ? 'Your watchlist is empty — add movies while browsing recommendations'
+      : 'No titles match the current filters';
+    listEl.innerHTML = `<div class="watchlist-empty">${esc(msg)}</div>`;
+    return;
+  }
+
+  listEl.innerHTML = '';
+  filtered.forEach(item => listEl.appendChild(createWatchlistRow(item)));
+}
+
+function createWatchlistRow(item) {
+  const row = document.createElement('div');
+  row.className = 'watchlist-row';
+
+  const isWatched = item.status === 'Watched';
+  const isTv = item.tab === 'TV';
+  const metaParts = [item.year, item.genre].filter(Boolean);
+
+  row.innerHTML = `
+    <span class="watchlist-type-badge ${isTv ? 'tv' : 'movie'}">${isTv ? 'TV' : 'Film'}</span>
+    <div class="watchlist-row-main">
+      <div class="watchlist-row-title">${esc(item.title)}</div>
+      ${metaParts.length ? `<div class="watchlist-row-meta">${esc(metaParts.join(' · '))}</div>` : ''}
+      ${item.actors ? `<div class="watchlist-actors">${esc(item.actors)}</div>` : ''}
+      ${item.awards ? `<div class="watchlist-oscar">🏆 ${esc(item.awards)}</div>` : ''}
+    </div>
+    <div class="tag-chip-wrap"></div>
+    <button class="watchlist-status-btn ${isWatched ? 'watched' : 'not-watched'}">
+      ${isWatched ? '✓ Watched' : 'Not Watched'}
+    </button>
+    <button class="watchlist-delete-btn" title="Remove">✕</button>
+  `;
+
+  // Tag chip UI
+  initTagChips(row.querySelector('.tag-chip-wrap'), item);
+
+  // Status toggle
+  const statusBtn = row.querySelector('.watchlist-status-btn');
+  statusBtn.addEventListener('click', async () => {
+    const newStatus = item.status === 'Watched' ? 'Not Watched' : 'Watched';
+    try {
+      await fetch(`/api/watchlist/${item.rowIndex}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, tab: item.tab }),
+      });
+      item.status = newStatus;
+      const nowWatched = newStatus === 'Watched';
+      statusBtn.className = `watchlist-status-btn ${nowWatched ? 'watched' : 'not-watched'}`;
+      statusBtn.textContent = nowWatched ? '✓ Watched' : 'Not Watched';
+      if (watchlistFilter !== 'all') renderWatchlist();
+    } catch {
+      showError('Failed to update status');
+    }
+  });
+
+  // Delete
+  const deleteBtn = row.querySelector('.watchlist-delete-btn');
+  deleteBtn.addEventListener('click', async () => {
+    deleteBtn.disabled = true;
+    try {
+      await fetch(`/api/watchlist/${item.rowIndex}?tab=${encodeURIComponent(item.tab)}`, {
+        method: 'DELETE',
+      });
+      unmarkInWatchlist(item.title);
+      watchlistData.forEach(d => {
+        if (d.tab === item.tab && d.rowIndex > item.rowIndex) d.rowIndex -= 1;
+      });
+      watchlistData = watchlistData.filter(d => d !== item);
+      renderWatchlist();
+      const count = watchlistData.length;
+      $('watchlistCount').textContent = count;
+      $('watchlistCount').hidden = count === 0;
+      $('watchlistHeaderCount').textContent = count > 0 ? `${count} title${count !== 1 ? 's' : ''}` : '';
+    } catch {
+      deleteBtn.disabled = false;
+      showError('Failed to remove from watchlist');
+    }
+  });
+
+  return row;
+}
+
+// ── Tag Chip UI ───────────────────────────────────────────
+function initTagChips(container, item) {
+  function getTags() {
+    return item.tag ? item.tag.split(',').map(t => t.trim()).filter(Boolean) : [];
+  }
+
+  async function saveTags(tags) {
+    const tagStr = tags.join(', ');
+    item.tag = tagStr;
+    try {
+      await fetch(`/api/watchlist/${item.rowIndex}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag: tagStr, tab: item.tab }),
+      });
+    } catch {
+      showError('Failed to save tag');
+    }
+  }
+
+  function render() {
+    container.innerHTML = '';
+    const tags = getTags();
+
+    tags.forEach(tag => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'tag-chip-text';
+      textSpan.textContent = tag;
+      chip.appendChild(textSpan);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'tag-chip-remove';
+      removeBtn.textContent = '×';
+      removeBtn.title = 'Remove tag';
+      removeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const updated = getTags().filter(t => t !== tag);
+        item.tag = updated.join(', ');
+        saveTags(updated);
+        render();
+      });
+      chip.appendChild(removeBtn);
+      container.appendChild(chip);
+    });
+
+    const input = document.createElement('input');
+    input.className = 'tag-chip-input';
+    input.type = 'text';
+    input.placeholder = tags.length === 0 ? 'Add tag…' : '＋';
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = input.value.replace(',', '').trim();
+        if (val) {
+          const current = getTags();
+          if (!current.includes(val)) {
+            const updated = [...current, val];
+            item.tag = updated.join(', ');
+            saveTags(updated);
+          }
+          input.value = '';
+          render();
+        }
+      } else if (e.key === 'Backspace' && !input.value) {
+        const current = getTags();
+        if (current.length > 0) {
+          const updated = current.slice(0, -1);
+          item.tag = updated.join(', ');
+          saveTags(updated);
+          render();
+        }
+      }
+    });
+
+    container.appendChild(input);
+  }
+
+  container.addEventListener('click', () => {
+    container.querySelector('.tag-chip-input')?.focus();
+  });
+
+  render();
 }
 
 // ── Movie Trivia ──────────────────────────────────────────
@@ -1083,13 +1498,6 @@ const TRIVIA_QUESTIONS = [
   },
   {
     category: 'Trivia',
-    question: 'Which James Bond was played by the most actors on screen?',
-    answer: 'James Bond (officially 8 actors across films)',
-    options: ['James Bond (officially 8 actors across films)', 'M (only 2 actors)', 'Q (only 3 actors)', 'Moneypenny (only 4 actors)'],
-    fact: 'Official EON-produced Bond films have featured six Bonds: Connery, Lazenby, Moore, Dalton, Brosnan, and Craig.',
-  },
-  {
-    category: 'Trivia',
     question: 'In "Casablanca," what do Rick and Ilsa ask Sam to play?',
     answer: '"As Time Goes By"',
     options: ['"As Time Goes By"', '"La Marseillaise"', '"It Had to Be You"', '"Moonlight Becomes You"'],
@@ -1128,13 +1536,11 @@ function showNextQuestion() {
   const optionsEl  = $('gameOptions');
   const feedbackEl = $('gameFeedback');
 
-  // Animate category badge
   categoryEl.style.animation = 'none';
   void categoryEl.offsetWidth;
   categoryEl.style.animation = 'popIn 0.3s ease';
   categoryEl.textContent = currentQuestion.category;
 
-  // Animate question
   questionEl.style.animation = 'none';
   void questionEl.offsetWidth;
   questionEl.style.animation = 'fadeUp 0.3s ease';
@@ -1143,7 +1549,6 @@ function showNextQuestion() {
   feedbackEl.innerHTML = '';
   feedbackEl.className = 'game-feedback';
 
-  // Shuffle options
   const shuffled = [...currentQuestion.options].sort(() => Math.random() - 0.5);
   optionsEl.innerHTML = '';
   shuffled.forEach(opt => {
@@ -1161,7 +1566,6 @@ function handleAnswer(btn, selected) {
   const feedbackEl = $('gameFeedback');
   const optionsEl  = $('gameOptions');
 
-  // Disable all buttons and highlight
   optionsEl.querySelectorAll('.game-option').forEach(b => {
     b.disabled = true;
     if (b.textContent === currentQuestion.answer) b.classList.add('correct');
@@ -1205,3 +1609,6 @@ function esc(str) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
+
+// ── Init ──────────────────────────────────────────────────
+updateWatchlistCountBadge();

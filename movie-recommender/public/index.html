@@ -15,29 +15,23 @@
   <nav class="nav">
     <div class="nav-inner container">
       <div class="logo">
-        <!-- Futuristic geometric logo: outer diamond + inner square + gradient nodes -->
+        <!-- Clapperboard logo -->
         <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#A78BFA"/>
-              <stop offset="100%" stop-color="#60D8FA"/>
-            </linearGradient>
-          </defs>
-          <rect width="34" height="34" rx="7" fill="#0D0D1F"/>
-          <!-- Outer diamond -->
-          <polygon points="17,3 31,17 17,31 3,17" stroke="url(#lg)" stroke-width="1.5" fill="none"/>
-          <!-- Inner square (axis-aligned, 45° offset from outer) -->
-          <rect x="11" y="11" width="12" height="12" stroke="url(#lg)" stroke-width="1" fill="none" opacity="0.5"/>
-          <!-- Cardinal nodes -->
-          <circle cx="17" cy="3"  r="2.2" fill="#A78BFA"/>
-          <circle cx="31" cy="17" r="2.2" fill="#60D8FA"/>
-          <circle cx="17" cy="31" r="2.2" fill="#A78BFA"/>
-          <circle cx="3"  cy="17" r="2.2" fill="#60D8FA"/>
-          <!-- Centre glow -->
-          <circle cx="17" cy="17" r="2.8" fill="url(#lg)"/>
+          <rect width="34" height="34" rx="8" fill="#1C1917"/>
+          <!-- Clapper top with stripes -->
+          <rect x="6" y="9" width="22" height="5.5" rx="1.5" fill="#FAF6EE"/>
+          <line x1="10.5" y1="9" x2="8"   y2="14.5" stroke="#1C1917" stroke-width="2.2" stroke-linecap="square"/>
+          <line x1="15.5" y1="9" x2="13"  y2="14.5" stroke="#1C1917" stroke-width="2.2" stroke-linecap="square"/>
+          <line x1="20.5" y1="9" x2="18"  y2="14.5" stroke="#1C1917" stroke-width="2.2" stroke-linecap="square"/>
+          <line x1="25.5" y1="9" x2="23"  y2="14.5" stroke="#1C1917" stroke-width="2.2" stroke-linecap="square"/>
+          <!-- Clapper body -->
+          <rect x="6" y="16" width="22" height="11" rx="1.5" stroke="#FAF6EE" stroke-width="1.5" fill="none"/>
         </svg>
         <span>Marquee</span>
       </div>
+      <button class="nav-watchlist-btn" id="navWatchlistBtn">
+        Watchlist <span class="watchlist-count-badge" id="watchlistCount" hidden>0</span>
+      </button>
     </div>
   </nav>
 
@@ -47,17 +41,13 @@
     <section class="hero" id="heroSection">
       <div class="hero-content container">
         <span class="eyebrow">AI-Powered Film Discovery</span>
-        <h1 class="hero-title">
-          Your Next Cinematic<br>
-          <em>Obsession</em> Awaits
-        </h1>
+        <h1 class="hero-title">What are you in the <span class="hero-title-accent">mood</span> for?</h1>
         <p class="hero-sub">
-          Enter a movie or TV show you love — our AI finds 10 perfectly matched picks,
-          complete with ratings, synopses, and why each one is right for you.
+          Or name a movie you love. We'll pick 10 perfect matches with ratings and streaming info.
         </p>
 
         <div class="search-wrap">
-          <label for="movieInput" class="sr-only">Enter a movie or TV show title</label>
+          <label for="movieInput" class="sr-only">Describe what you want to watch</label>
           <div class="search-box" id="searchBox">
             <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="2" width="20" height="20" rx="2.18"/>
@@ -69,14 +59,14 @@
               <line x1="17" y1="17" x2="22" y2="17"/>
               <line x1="17" y1="7" x2="22" y2="7"/>
             </svg>
-            <input
-              type="text"
+            <textarea
               id="movieInput"
               class="search-input"
-              placeholder="e.g. Inception, Breaking Bad, Parasite…"
+              rows="1"
+              placeholder="e.g. Something heartwarming like Good Will Hunting, or a dark psychological thriller…"
               autocomplete="off"
               spellcheck="false"
-            >
+            ></textarea>
             <button class="search-btn" id="searchBtn" type="button">
               <span>Discover</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -90,11 +80,11 @@
         <div class="quick-row">
           <span class="quick-label">Try:</span>
           <div class="quick-pills">
-            <button class="pill" data-movie="Inception">Inception</button>
-            <button class="pill" data-movie="Parasite">Parasite</button>
-            <button class="pill" data-movie="The Godfather">The Godfather</button>
-            <button class="pill" data-movie="Breaking Bad">Breaking Bad</button>
-            <button class="pill" data-movie="Spirited Away">Spirited Away</button>
+            <button class="pill" data-query="Heartwarming feel-good drama with great character development">Feel-good drama</button>
+            <button class="pill" data-query="Mind-bending film like Inception with layered reality">Like Inception</button>
+            <button class="pill" data-query="Epic crime family saga like The Godfather">Like The Godfather</button>
+            <button class="pill" data-query="Dark psychological thriller with an unreliable narrator">Dark thriller</button>
+            <button class="pill" data-query="Visually magical animated film like Spirited Away">Like Spirited Away</button>
           </div>
         </div>
       </div>
@@ -140,7 +130,7 @@
           </button>
         </div>
         <div class="seed-inner container">
-          <div class="seed-poster-wrap">
+          <div class="seed-poster-wrap" id="seedPosterWrap">
             <img class="seed-poster" id="seedPoster" src="" alt="" hidden>
             <div class="seed-poster-fallback" id="seedPosterFallback">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -151,9 +141,10 @@
               </svg>
             </div>
           </div>
-          <div class="seed-info">
-            <p class="seed-label">Because you loved</p>
+          <div class="seed-info" id="seedInfo">
+            <p class="seed-label" id="seedLabel">Because you liked</p>
             <h2 class="seed-title" id="seedTitle"></h2>
+            <p class="seed-query-tag" id="seedQueryTag" hidden></p>
             <div class="seed-ratings" id="seedRatings"></div>
             <div class="seed-genres" id="seedGenres"></div>
             <p class="seed-synopsis" id="seedSynopsis"></p>
@@ -205,6 +196,42 @@
         </button>
       </div>
 
+    </section>
+
+    <!-- ══════════════════════════════ WATCHLIST ══════════════════════════ -->
+    <section class="watchlist-section" id="watchlistSection" hidden>
+      <div class="watchlist-top-bar container">
+        <button class="btn-back" id="backFromWatchlistBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <button class="btn-new-search" id="watchlistNewSearchBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-3.74"/>
+          </svg>
+          New Search
+        </button>
+      </div>
+      <div class="watchlist-content container">
+        <div class="watchlist-header">
+          <h2>My Watchlist</h2>
+          <span class="watchlist-header-count" id="watchlistHeaderCount"></span>
+        </div>
+        <div class="filter-tabs" id="watchlistTypeFilterTabs">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="movie">Films</button>
+          <button class="filter-tab" data-filter="tv">TV</button>
+        </div>
+        <div class="filter-tabs" id="watchlistFilterTabs">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="Not Watched">Not Watched</button>
+          <button class="filter-tab" data-filter="Watched">Watched</button>
+        </div>
+        <div class="watchlist-list" id="watchlistList"></div>
+      </div>
     </section>
 
   </main>
