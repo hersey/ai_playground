@@ -521,7 +521,7 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Rec section */
-.rec-section { padding: 36px 0; }
+.rec-section { padding-top: 36px; padding-bottom: 36px; }
 .rec-header  { margin-bottom: 24px; }
 
 .rec-header-top {
@@ -734,20 +734,30 @@ body {
 .oscar-nom { background: #E0E7FF; color: #3730A3; }
 .oscar-more { font-weight: 500; opacity: 0.75; }
 
-/* Search again */
-.again-wrap { padding: 24px 0 48px; text-align: center; }
+/* Bottom actions */
+.again-wrap {
+  padding-top: 24px; padding-bottom: 48px;
+  display: flex; justify-content: center; align-items: center;
+  gap: 12px; flex-wrap: wrap;
+}
 
 .btn-again {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--accent); color: #fff;
-  border: none; border-radius: 100px;
+  border: 2px solid var(--accent); border-radius: 100px;
   padding: 12px 28px;
   font-size: 0.95rem; font-weight: 600; font-family: inherit;
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
 }
 
-.btn-again:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.btn-again:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: translateY(-1px); }
+
+.btn-again--ghost {
+  background: transparent; color: var(--accent);
+}
+
+.btn-again--ghost:hover { background: transparent; color: var(--accent-hover); border-color: var(--accent-hover); }
 
 /* ── Watchlist Section ─────────────────────────────────────── */
 .watchlist-section {
@@ -757,7 +767,7 @@ body {
 
 .watchlist-top-bar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 80px 0 24px;
+  padding-top: 80px; padding-bottom: 24px;
 }
 
 .btn-back {
@@ -1068,7 +1078,7 @@ body {
   .seed-synopsis { font-size: 0.83rem; }
 
   /* Rec header */
-  .rec-section { padding: 22px 0; }
+  .rec-section { padding-top: 22px; padding-bottom: 22px; }
   .rec-header { margin-bottom: 16px; }
   .rec-header-top { flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
   .rec-title { font-size: 1.15rem; }
@@ -1130,7 +1140,7 @@ body {
   .tag-chip-wrap        { order: 6; flex: 1 1 0; min-width: 0; max-width: none; }
 
   /* Search again */
-  .again-wrap { padding: 20px 0 max(40px, env(safe-area-inset-bottom)); }
+  .again-wrap { padding-top: 20px; padding-bottom: max(40px, env(safe-area-inset-bottom)); flex-direction: column; }
   .btn-again { width: 100%; justify-content: center; }
 
   /* Toast — respects home bar */

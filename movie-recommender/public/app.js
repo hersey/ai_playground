@@ -26,7 +26,8 @@ const resultsSection   = $('resultsSection');
 const watchlistSection = $('watchlistSection');
 const movieInput       = $('movieInput');
 const searchBtn        = $('searchBtn');
-const searchAgainBtn   = $('searchAgainBtn');
+const searchAgainBtn      = $('searchAgainBtn');
+const searchAgainMoreBtn  = $('searchAgainMoreBtn');
 const moreRecsBtn      = $('moreRecsBtn');
 const moviesGrid       = $('moviesGrid');
 const toast            = $('toast');
@@ -68,6 +69,7 @@ const goHero = () => {
 };
 
 searchAgainBtn.addEventListener('click', goHero);
+searchAgainMoreBtn.addEventListener('click', () => { if (!busy) doSearch({ refresh: true }); });
 $('newSearchBtn').addEventListener('click', goHero);
 
 moreRecsBtn.addEventListener('click', () => {
